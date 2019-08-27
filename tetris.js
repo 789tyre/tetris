@@ -86,6 +86,7 @@ function initBoard(board){ //setting up a blank board, ready to be filled up by 
             board[i].push(backgroundColor);
         }
     }
+	
     return board;
 }
 
@@ -102,6 +103,7 @@ function add_shape(board, piece){
 	let coords = []
 
 	for (i = 0; i < 4; i++){
+		activeShape[i] = [0,0];
 		coords.push([Wmiddle + pieces[piece][i][0], pieces[piece][i][1]]);
 		current_rotation = 0;
 	}
@@ -113,23 +115,29 @@ function add_shape(board, piece){
 function translate_shape(direction, coords){
 	//This function gives the new coordinates given the old coordinates and the direction.
 	//0 = down, 1 = left, 2 = right, 3 = anti clockwise, 4 = clockwise
-	let newCoords = []
+	let newCoords = [];
+	let relativeCoords = []
 
 	for (i = 0; i < coords.length; i++){
 		if (direction == 3 || direction == 4){
-			let relativeCoords = [activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]];
+			relativeCoords = [activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]];
 		}
 		switch (direction){
 		case 0:
 			newCoords.push([coords[i][0], coords[i][1] + 1]);
+			break;
 		case 1:
 			newCoords.push([coords[i][0] - 1, coords[i][1]]);
+			break;
 		case 2:
-			newCoords.push([coords[i][0], coords[i][1]]);
+			newCoords.push([coords[i][0] + 1, coords[i][1]]);
+			break;
 		case 3:
-			newCoords.push([relativeCoords[i][1] * -1 + coords[0][0], relativeCoords[i][0] + coords[0][1]]);
+			newCoords.push([relativeCoords[1] * -1 + coords[0][0], relativeCoords[0] + coords[0][1]]);
+			break;
 		case 4:
-			newCoords.push([relativeCoords[i][1] + coords[0][0], relativeCoords[i][0] * -1 + coords[0][1]]);
+			newCoords.push([relativeCoords[1] + coords[0][0], relativeCoords[0] * -1 + coords[0][1]]);
+			break;
 		}
 	}
 	return newCoords;
@@ -144,7 +152,7 @@ function doesItFit(movement, rotation, down){ //The parameters are questions tha
 	//First find what the new Coords are
 	switch (movement){
 	case -1:
-		newCoords = translate_block(1, activeShape);
+		newCoords = translate_shape(1, activeShape);
 		break;
 	case 1:
 		newCoords = translate_shape(2, activeShape);
@@ -154,7 +162,7 @@ function doesItFit(movement, rotation, down){ //The parameters are questions tha
 		break;
 	}
 
-	if (down){newCoords = translate_shape(0,0);}
+	if (down){newCoords = translate_shape(0,newCoords);}
 
 	switch (rotation){
 	case -1:
@@ -168,8 +176,15 @@ function doesItFit(movement, rotation, down){ //The parameters are questions tha
 	}
 	
 	//Then check all of the coordinates and see if they all don't colide with any of the background.
+	
+	for (i = 0; i < activeShape.length; i++){
+		board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
+	}
 	for(i = 0; i < newCoords.length; i++){
-		if (newCoords[i][0] < 0 || newCoords[i][1] > board_width)
+		if (newCoords[i][0] < 0 || newCoords[i][0] > board_width-1 || board[newCoords[i][0]][newCoords[i][1]] != backgroundColor){
+			updateShape(activeShape)
+			return false
+		}
 	}
 
 	return true;
@@ -200,23 +215,6 @@ function rotate(anti){
 }
 
 
-function moveBlock(left){
-	let newCoords = [];
-	if (left){
-		//move the active shape left
-		for (i = 0; i<4; i++){
-			newCoords.push([activeShape[i][0] - 1, activeShape[i][1]]);
-		}
-	} else {
-		//move the active shape right
-		for(i = 0; i<4; i++){
-			newCoords.push([activeShape[i][0] + 1, activeShape[i][1]]);
-		}
-	}
-	updateShape(newCoords);
-
-}
-
 function updateShape(newCoords){ //Called whenever we make a change the the activeShape variable
 	for(i = 0; i < 4; i++){
 		board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
@@ -225,8 +223,17 @@ function updateShape(newCoords){ //Called whenever we make a change the the acti
 	for (i = 0; i < 4; i++){
 		board[newCoords[i][0]][newCoords[i][1]] = tetromino_colors[current_shape_color];
 	}
-
 	activeShape = newCoords;
+}
+
+function settleShape(){
+	//Called when the shape hits the bottom
+	//Check for any lines and clear them
+	//update score if cleared
+	//
+	//add a new shape
+	piece = Math.floor(Math.random() * 7);
+	add_shape(board, piece);
 
 }
 
@@ -238,25 +245,33 @@ function draw(){
 function keyPressed(e){
 	switch(e.key){
 	case "ArrowLeft":
-			if(doesItFit(-1, 0)){moveBlock(true);}
+			if(doesItFit(-1, 0, false)){
+				
+				updateShape(translate_shape(1, activeShape));
+			}
 			break;
 	case "ArrowRight":
-			if(doesItFit(1, 0)){moveBlock(false);}
+			if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
+			break;
+	case "ArrowDown":
+			if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
 			break;
 	case "z":
-			console.log("Rotate anti clockwise");
+			if(doesItFit(0,1, false)){updateShape(translate_shape(3, activeShape));}
+			
 			break;
 	case "x":
-			console.log("Rotate clockwise");
+			if(doesItFit(0,-1, false)){updateShape(translate_shape(4, activeShape))}
 			break;
 	}
-	console.log(e.key);
 }
 
-board = initBoard(board);
-add_shape(board, 2);
-
-
+function startGame(){
+	board = initBoard(board);
+	add_shape(board, Math.floor(Math.random() * 7));
+}
 
 window.requestAnimationFrame(draw);
 document.addEventListener("keydown", keyPressed, false);
+
+startGame()
