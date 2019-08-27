@@ -7,11 +7,12 @@ const wpadding = 75;
 const hpadding = 20;
 const blockWidth = (width-(wpadding*2))/10;
 const blockHeight = (height-(hpadding*2))/20;
-const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904" ]
+const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904"]
                             //I,      O,         T,        J,          L,       S,        Z
 
 let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
+let current_rotation = 0;
 
 const pieces = [
 	[
@@ -97,10 +98,45 @@ function add_piece(board, piece){
 	let Wmiddle = Math.floor(board.length/2);
 	//let piece = 0;
 	for (i = 0; i < 4; i++){
-		let coords = [Wmiddle + pieces[piece][i][0], pieces[piece][i][1]]
+		let coords = [Wmiddle + pieces[piece][i][0], pieces[piece][i][1]];
 		board[coords[0]][coords[1]] = tetromino_colors[piece];
 		activeShape[i] = coords;
+		current_rotation = 0;
 	}
+}
+
+//function doesItFit(rotation){
+	//-1 for anti-clockwise, 0 for none, 1 for clockwise
+	//apply rotation if the rotation parameter is not 0
+	
+//	let nextCoords = 0;
+	
+	
+	
+//	for (i = 0; i < 4; i++){
+		
+//	}
+	
+	
+//	return true;
+	
+//}
+
+function rotate(anti){
+	let newCoords = [];
+	
+	for (i = 1; i < activeShape.length; i++){
+		newCoords.push([]);
+		if (anti){
+			newCoords[i].push(activeShape[i][0]);
+			newCoords[i]push(activeShape[i][1] * -1);
+		} else {
+		
+		}
+	}
+	
+	
+	return newCoords;
 }
 
 board = initBoard(board);
