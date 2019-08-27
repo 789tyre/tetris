@@ -5,6 +5,8 @@ const width = canvas.width;
 const height = canvas.height;
 const wpadding = 75;
 const hpadding = 20;
+const board_width = 10;
+const board_height = 20;
 const blockWidth = (width-(wpadding*2))/10;
 const blockHeight = (height-(hpadding*2))/20;
 const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904"]
@@ -13,6 +15,7 @@ const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0
 let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
 let current_rotation = 0;
+let current_shape_color = 0;
 
 const pieces = [
 	[
@@ -23,7 +26,7 @@ const pieces = [
 		[0,0],[1,0],[0,1],[1,1] //O piece
 	],
 	[
-		[0,0],[-1,1],[0,1],[1,1] //T piece
+		[0,1],[-1,1],[0,0],[1,1] //T piece
 	],
 	[
 		[0,1],[0,0],[-2,1],[-1,1] //J piece
@@ -77,9 +80,9 @@ function drawBlock(x, y, color){
 
 function initBoard(board){ //setting up a blank board, ready to be filled up by tetrominos
     board = []
-    for(i = 0; i<10; i++){
+    for(i = 0; i < board_width; i++){
         board.push([]);
-        for(j = 0; j<20; j++){
+        for(j = 0; j < board_height; j++){
             board[i].push(backgroundColor);
         }
     }
@@ -94,55 +97,166 @@ function drawBoard(board){
     }
 }
 
-function add_piece(board, piece){
+function add_shape(board, piece){
 	let Wmiddle = Math.floor(board.length/2);
-	//let piece = 0;
+	let coords = []
+
 	for (i = 0; i < 4; i++){
-		let coords = [Wmiddle + pieces[piece][i][0], pieces[piece][i][1]];
-		board[coords[0]][coords[1]] = tetromino_colors[piece];
-		activeShape[i] = coords;
+		coords.push([Wmiddle + pieces[piece][i][0], pieces[piece][i][1]]);
 		current_rotation = 0;
 	}
+	current_shape_color = piece;
+	updateShape(coords);
+
 }
 
-//function doesItFit(rotation){
-	//-1 for anti-clockwise, 0 for none, 1 for clockwise
-	//apply rotation if the rotation parameter is not 0
-	
-//	let nextCoords = 0;
-	
-	
-	
-//	for (i = 0; i < 4; i++){
-		
-//	}
-	
-	
-//	return true;
-	
-//}
+function translate_shape(direction, coords){
+	//This function gives the new coordinates given the old coordinates and the direction.
+	//0 = down, 1 = left, 2 = right, 3 = anti clockwise, 4 = clockwise
+	let newCoords = []
 
-function rotate(anti){
-	let newCoords = [];
-	
-	for (i = 1; i < activeShape.length; i++){
-		newCoords.push([]);
-		if (anti){
-			newCoords[i].push(activeShape[i][0]);
-			newCoords[i]push(activeShape[i][1] * -1);
-		} else {
-		
+	for (i = 0; i < coords.length; i++){
+		if (direction == 3 || direction == 4){
+			let relativeCoords = [activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]];
+		}
+		switch (direction){
+		case 0:
+			newCoords.push([coords[i][0], coords[i][1] + 1]);
+		case 1:
+			newCoords.push([coords[i][0] - 1, coords[i][1]]);
+		case 2:
+			newCoords.push([coords[i][0], coords[i][1]]);
+		case 3:
+			newCoords.push([relativeCoords[i][1] * -1 + coords[0][0], relativeCoords[i][0] + coords[0][1]]);
+		case 4:
+			newCoords.push([relativeCoords[i][1] + coords[0][0], relativeCoords[i][0] * -1 + coords[0][1]]);
 		}
 	}
-	
-	
 	return newCoords;
 }
 
-board = initBoard(board);
+function doesItFit(movement, rotation, down){ //The parameters are questions that are asked
+	// for movement, -1 = left, 0 =  no movement, 1 = right
+	// for rotation, -1 = Anti Clockwise, 0 = no rotation, 1 = Clockwise
+	// for down, true = the shape is moving down, false the shape is not moving down.
+	let newCoords = [];
+
+	//First find what the new Coords are
+	switch (movement){
+	case -1:
+		newCoords = translate_block(1, activeShape);
+		break;
+	case 1:
+		newCoords = translate_shape(2, activeShape);
+		break;
+	default:
+		newCoords = activeShape;
+		break;
+	}
+
+	if (down){newCoords = translate_shape(0,0);}
+
+	switch (rotation){
+	case -1:
+		newCoords = translate_shape(3, newCoords);
+		break;
+	case 1:
+		newCoords = translate_shape(4, newCoords);
+		break;
+	default:
+		newCoords = newCoords;
+	}
+	
+	//Then check all of the coordinates and see if they all don't colide with any of the background.
+	for(i = 0; i < newCoords.length; i++){
+		if (newCoords[i][0] < 0 || newCoords[i][1] > board_width)
+	}
+
+	return true;
+}
+
+function rotate(anti){
+	//Only for testing purposes. Will delete later
+	let newCoords = [];
+	newCoords.push(activeShape[0]);
+
+	let relativeCoords = []
+
+	for (i = 1; i < 4; i++){
+		relativeCoords.push([activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]]);
+	}
+	console.log(relativeCoords);
+	for (i = 0; i < 3; i++){
+		if (anti){
+			//Rotate AntiClockwise
+			newCoords.push([relativeCoords[i][1] * -1 + newCoords[0][0], relativeCoords[i][0] + newCoords[0][1]]);
+		} else {
+			//Rotate Clockwise
+			newCoords.push([relativeCoords[i][1] + newCoords[0][0], relativeCoords[i][0] * -1 + newCoords[0][1]]);
+		}
+	}
+
+	updateShape(newCoords);
+}
+
+
+function moveBlock(left){
+	let newCoords = [];
+	if (left){
+		//move the active shape left
+		for (i = 0; i<4; i++){
+			newCoords.push([activeShape[i][0] - 1, activeShape[i][1]]);
+		}
+	} else {
+		//move the active shape right
+		for(i = 0; i<4; i++){
+			newCoords.push([activeShape[i][0] + 1, activeShape[i][1]]);
+		}
+	}
+	updateShape(newCoords);
+
+}
+
+function updateShape(newCoords){ //Called whenever we make a change the the activeShape variable
+	for(i = 0; i < 4; i++){
+		board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
+	}
+	
+	for (i = 0; i < 4; i++){
+		board[newCoords[i][0]][newCoords[i][1]] = tetromino_colors[current_shape_color];
+	}
+
+	activeShape = newCoords;
+
+}
+
 function draw(){
     drawBoard(board);
     window.requestAnimationFrame(draw);
 }
 
+function keyPressed(e){
+	switch(e.key){
+	case "ArrowLeft":
+			if(doesItFit(-1, 0)){moveBlock(true);}
+			break;
+	case "ArrowRight":
+			if(doesItFit(1, 0)){moveBlock(false);}
+			break;
+	case "z":
+			console.log("Rotate anti clockwise");
+			break;
+	case "x":
+			console.log("Rotate clockwise");
+			break;
+	}
+	console.log(e.key);
+}
+
+board = initBoard(board);
+add_shape(board, 2);
+
+
+
 window.requestAnimationFrame(draw);
+document.addEventListener("keydown", keyPressed, false);
