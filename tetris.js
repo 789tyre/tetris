@@ -19,9 +19,11 @@ let activeShape = [[0,0],[0,0],[0,0],[0,0]];
 let current_rotation = 0;
 let current_shape_color = 0;
 
+let fullLines = [];
 let next_shape = 0; //Edit the addShape function and the settle shape function to handle these as well
 let next_shape_color = 0;
 let speed = 60;
+let waitTimer = 0;
 let speedCounter = speed;
 
 const pieces = [
@@ -223,7 +225,7 @@ function settleShape(){
 	//Called when the shape hits the bottom
 	
 	//Check for any lines
-		let fullLines = [];
+		fullLines = [];
 		for(let i = 0; i < activeShape.length; i++){
 			if(checkLine(activeShape[i][1])){
 				fullLines.push(activeShape[i][1])
@@ -236,38 +238,45 @@ function settleShape(){
 		
 		fullLines.sort();
 		fullLines = removeDup(fullLines);
-		console.log(fullLines);
-		
-		//Clear and move the blocks above it downward
-		for(let current_line = 0; current_line < fullLines.length; current_line++){
-			for(let i = 0; i < board_width; i++){ //This loop clears the line
-				board[i][fullLines[current_line]] = backgroundColor;
-			}
-			
-			let tempBoard = board;
-			for(let i = 0; i < fullLines[current_line]; i++){
-				for (let block = 0; block < board_width; block++){
-					board[block][i + 1] = tempBoard[block][i];
-				}
-			}
-			
-		}
-	
-	//update score if cleared
-	
-	//add a new shape
-	//Check if you can put the piece in and if you can't
-	let piece = Math.floor(Math.random() * 7);
-	add_shape(board, piece);
-	
-	//end the Game
+		//console.log(fullLines);
+		waitTimer = 15;
 
 }
 
+
+function clearLines(fullLines){
+	//Clear and move the blocks above it downward
+	for(let current_line = 0; current_line < fullLines.length; current_line++){
+		for(let i = 0; i < board_width; i++){ //This loop clears the line
+			board[i][fullLines[current_line]] = backgroundColor;
+		}
+	
+		let tempBoard = board.map(function(arr) {return arr.slice();})
+		for(let i = 0; i < fullLines[current_line]; i++){
+			for (let block = 0; block < board_width; block++){
+				board[block][i + 1] = tempBoard[block][i];
+			}
+		}
+	}
+	
+	let piece = Math.floor(Math.random() * 7);
+	add_shape(board, piece);
+}
+
+
 function draw(){
-	speedCounter--;
-	if (speedCounter <= 0){
-		if (doesItFit(0, 0, true)){updateShape(translate_shape(0, activeShape));speedCounter = speed;} else {settleShape();}
+	
+	if (waitTimer){
+		waitTimer--;
+		if (!waitTimer){
+			clearLines(fullLines);
+		}
+	} else {
+	
+		speedCounter--;
+		if (speedCounter <= 0){
+			if (doesItFit(0, 0, true)){updateShape(translate_shape(0, activeShape));speedCounter = speed;} else {settleShape();}
+		}
 	}
     drawBoard(board);
     window.requestAnimationFrame(draw);
