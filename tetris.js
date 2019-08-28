@@ -381,11 +381,11 @@ function keyPressed(e){
 		case "ArrowDown":
 				if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
 				break;
-		case ";":
+		case "z":
 				if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
 				
 				break;
-		case "q":
+	ase "x":
 				if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
 				break;
 		}
