@@ -4,12 +4,14 @@ const context = canvas.getContext("2d");
 const backgroundColor = "#cccccc"
 const width = canvas.width;
 const height = canvas.height;
-const wpadding = 75;
+const wpadding = 100;
 const hpadding = 20;
 const board_width = 10;
 const board_height = 20;
 const blockWidth = (width-(wpadding*2))/10;
 const blockHeight = (height-(hpadding*2))/20;
+const boxSize = wpadding - (hpadding * 2);
+const miniBlockSize = (boxSize - (5 * 2)) / 6;
 const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904"]
                             //I,      O,         T,        J,          L,       S,        Z
 
@@ -18,10 +20,12 @@ let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
 let current_rotation = 0;
 let current_shape_color = 0;
-
+let gameover = false;
 let fullLines = [];
 let next_shape = 0; //Edit the addShape function and the settle shape function to handle these as well
 let next_shape_color = 0;
+let hold_shape = 0;
+let hold_shape_color = 0;
 let speed = 60;
 let waitTimer = 0;
 let speedCounter = speed;
@@ -32,7 +36,7 @@ const pieces = [
 	],
 
 	[
-		[0,0],[1,0],[0,1],[1,1] //O piece
+		[-1,0],[0,0],[-1,1],[0,1] //O piece
 	],
 	[
 		[0,1],[-1,1],[0,0],[1,1] //T piece
@@ -87,6 +91,13 @@ function drawBlock(x, y, color){
     context.fillRect(x, y, blockWidth, blockHeight);
 }
 
+function drawMiniBlock(x, y, color){
+	context.strokeStyle = "#000000";
+	context.fillStyle = color;
+	context.strokeRect(x, y, miniBlockSize, miniBlockSize);
+	context.fillRect(x, y, miniBlockSize, miniBlockSize);
+}
+
 function initBoard(board){ //setting up a blank board, ready to be filled up by tetrominos
     board = []
     for(let i = 0; i < board_width; i++){
@@ -100,11 +111,19 @@ function initBoard(board){ //setting up a blank board, ready to be filled up by 
 }
 
 function drawBoard(board){
-    for(let i = 0; i < board.length; i++){
+    for(let i = 0; i < board.length; i++){ //Draw the board
         for(let j = 0; j < board[i].length; j++){
             drawBlock((wpadding+(blockWidth*i)), (hpadding+(blockHeight*j)), board[i][j])
         }
     }
+	//Draw the next and hold box (placeholder)
+	context.strokeStyle = "#000000";
+	context.fillStyle = backgroundColor;
+	context.strokeRect(wpadding + (blockWidth * board_width) + hpadding, hpadding * 2,  boxSize, boxSize); //Next box
+	context.strokeRect(hpadding, hpadding * 2, boxSize, boxSize); //Hold Box
+	
+	
+	
 }
 
 function add_shape(board, piece){
@@ -117,8 +136,20 @@ function add_shape(board, piece){
 		current_rotation = 0;
 	}
 	current_shape_color = piece;
-	updateShape(coords);
+	
+	if (checkGameOver(coords)){
+		updateShape(coords);
+	} else {
+		gameover = true;
+	}
 
+}
+
+function checkGameOver(coords){
+	for (let i = 0; i < coords.length; i++){
+		if (board[coords[i][0]][coords[i][1]] != backgroundColor){return false;}
+	}
+	return true;
 }
 
 function translate_shape(direction, coords){
@@ -200,6 +231,7 @@ function doesItFit(movement, rotation, down){ //The parameters are questions tha
 }
 
 function updateShape(newCoords){ //Called whenever we make a change the the activeShape variable
+
 	for(let i = 0; i < 4; i++){
 		board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
 	}
@@ -209,7 +241,6 @@ function updateShape(newCoords){ //Called whenever we make a change the the acti
 	}
 	activeShape = newCoords;
 }
-
 
 function checkLine(y){
 	
@@ -266,16 +297,23 @@ function clearLines(fullLines){
 
 function draw(){
 	
-	if (waitTimer){
-		waitTimer--;
-		if (!waitTimer){
-			clearLines(fullLines);
-		}
-	} else {
-	
-		speedCounter--;
-		if (speedCounter <= 0){
-			if (doesItFit(0, 0, true)){updateShape(translate_shape(0, activeShape));speedCounter = speed;} else {settleShape();}
+	if (!gameover){
+		if (waitTimer){
+			waitTimer--;
+			if (!waitTimer){
+				clearLines(fullLines);
+			}
+		} else {
+		
+			speedCounter--;
+			if (speedCounter <= 0){
+				if (doesItFit(0, 0, true)){
+					updateShape(translate_shape(0, activeShape));
+					speedCounter = speed;
+				} else {
+					settleShape();
+				}
+			}
 		}
 	}
     drawBoard(board);
@@ -283,26 +321,29 @@ function draw(){
 }
 
 function keyPressed(e){
-	switch(e.key){
-	case "ArrowLeft":
-			if(doesItFit(-1, 0, false)){
+	
+	if (!gameover){
+		switch(e.key){
+		case "ArrowLeft":
+				if(doesItFit(-1, 0, false)){
+					
+					updateShape(translate_shape(1, activeShape));
+				}
+				break;
+		case "ArrowRight":
+				if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
+				break;
+		case "ArrowDown":
+				if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
+				break;
+		case ";":
+				if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
 				
-				updateShape(translate_shape(1, activeShape));
-			}
-			break;
-	case "ArrowRight":
-			if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
-			break;
-	case "ArrowDown":
-			if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
-			break;
-	case ";":
-			if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
-			
-			break;
-	case "q":
-			if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
-			break;
+				break;
+		case "q":
+				if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
+				break;
+		}
 	}
 }
 
@@ -310,6 +351,7 @@ function startGame(){
 	window.cancelAnimationFrame(draw);
 	board = initBoard(board);
 	add_shape(board, Math.floor(Math.random() * 7));
+	gameover = false;
 	window.requestAnimationFrame(draw);
 }
 
