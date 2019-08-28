@@ -10,8 +10,8 @@ const board_width = 10;
 const board_height = 20;
 const blockWidth = (width-(wpadding*2))/10;
 const blockHeight = (height-(hpadding*2))/20;
-const boxSize = wpadding - (hpadding * 2);
-const miniBlockSize = (boxSize - (5 * 2)) / 6;
+const boxSize = wpadding/2;
+const miniBlockSize = boxSize/5;
 const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904"]
                             //I,      O,         T,        J,          L,       S,        Z
 
@@ -20,21 +20,22 @@ let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
 let current_rotation = 0;
 let current_shape_color = 0;
-let gameover = false;
 let fullLines = [];
-let next_shape = 0; //Edit the addShape function and the settle shape function to handle these as well
-let next_shape_color = 0;
-let hold_shape = 0;
-let hold_shape_color = 0;
-let speed = 60;
+let next_shape = -1; //Edit the addShape function and the settle shape function to handle these as well
+let hold_shape = -1;
+let hold_shape_color = -1;
+let gameover = false;
+let lines = 0;
+let score = 0;
+let level = 0;
+let speed = 70;
 let waitTimer = 0;
 let speedCounter = speed;
 
 const pieces = [
 	[
-		[0,1],[0,0],[0,2],[0,3] //I piece
+		[0,2],[0,0],[0,1],[0,3] //I piece
 	],
-
 	[
 		[-1,0],[0,0],[-1,1],[0,1] //O piece
 	],
@@ -42,10 +43,10 @@ const pieces = [
 		[0,1],[-1,1],[0,0],[1,1] //T piece
 	],
 	[
-		[0,1],[0,0],[-2,1],[-1,1] //J piece
+		[0,1],[1,0],[-1,1],[1,1] //J piece
 	],
 	[
-		[-1,1],[-1,0],[0,1],[1,1] //L piece
+		[0,1],[-1,0],[-1,1],[1,1] //L piece
 	],
 	[
 		[0,1],[0,0],[1,0],[-1,1] //S piece
@@ -58,8 +59,8 @@ const pieces = [
 //Inital State of the Shapes
 //
 //1       I
-//0
 //2
+//0
 //3
 //
 //01      O
@@ -69,10 +70,10 @@ const pieces = [
 //103
 //
 //1       L
-//023
+//203
 //
 //  1     J
-//230
+//203
 //
 // 12     S
 //30
@@ -111,6 +112,10 @@ function initBoard(board){ //setting up a blank board, ready to be filled up by 
 }
 
 function drawBoard(board){
+	context.fillStyle = backgroundColor;
+	context.strokeStyle = "#000000";
+	context.strokeRect(0,0,width, height);
+	context.fillRect(0,0, width, height);
     for(let i = 0; i < board.length; i++){ //Draw the board
         for(let j = 0; j < board[i].length; j++){
             drawBlock((wpadding+(blockWidth*i)), (hpadding+(blockHeight*j)), board[i][j])
@@ -120,23 +125,44 @@ function drawBoard(board){
 	context.strokeStyle = "#000000";
 	context.fillStyle = backgroundColor;
 	context.strokeRect(wpadding + (blockWidth * board_width) + hpadding, hpadding * 2,  boxSize, boxSize); //Next box
+	context.fillRect(wpadding + hpadding + (blockWidth * board_width), hpadding * 2, boxSize, boxSize);
+
+	for(let i = 0; i < activeShape.length; i++){
+		let centerW = boxSize/2 - miniBlockSize/2;
+		let centerH = (boxSize/2) - miniBlockSize * 1.5;
+		drawMiniBlock(wpadding + hpadding + (blockWidth * board_width) + centerW + (pieces[next_shape][i][0] * miniBlockSize), hpadding * 2 + centerH + (pieces[next_shape][i][1] * miniBlockSize), tetromino_colors[next_shape]);
+		//Maybe instead have a function that figures out where to put the mini shape and not this calculating garbage and offcenter stuff.
+
+	}
+
 	context.strokeRect(hpadding, hpadding * 2, boxSize, boxSize); //Hold Box
 	
-	
+	//Draw the level, current score and the line count
+	context.font = "30 px Arial";
+	context.fillStyle = "#000000";
+	context.fillText("Level: " + level, hpadding, boxSize + hpadding * 3);
+	context.fillText("Lines: " + lines, hpadding, boxSize + hpadding * 4);
+	context.fillText("Score: " + score, hpadding, boxSize + hpadding * 5);
 	
 }
 
-function add_shape(board, piece){
+function add_shape(){
 	let Wmiddle = Math.floor(board.length/2);
+
+	if (next_shape == -1){
+		next_shape = Math.floor(Math.random() * 7);
+	}
+
 	let coords = []
 
-	for (let i = 0; i < 4; i++){
+	for(let i = 0; i < activeShape.length; i++){
 		activeShape[i] = [0,0];
-		coords.push([Wmiddle + pieces[piece][i][0], pieces[piece][i][1]]);
+		coords.push([Wmiddle + pieces[next_shape][i][0], pieces[next_shape][i][1]]);
 		current_rotation = 0;
 	}
-	current_shape_color = piece;
-	
+	current_shape_color = next_shape;
+	next_shape = Math.floor(Math.random() * 7);
+
 	if (checkGameOver(coords)){
 		updateShape(coords);
 	} else {
@@ -290,8 +316,27 @@ function clearLines(fullLines){
 		}
 	}
 	
-	let piece = Math.floor(Math.random() * 7);
-	add_shape(board, piece);
+	//Update Score and line count and maybe level and speed
+	switch(fullLines.length){
+	case 1:
+		score += 40 * (level + 1);
+		break;
+	case 2:
+		score += 100 * (level + 1);
+		break;
+	case 3:
+		score += 300 * (level + 1);
+		break;
+	case 4:
+		score += 1200 * (level + 1);
+		break;
+	}
+	lines += fullLines.length;
+	if (lines != 0 && lines % 10 == 0){
+		speed -= 10;
+		level++;
+	}
+	add_shape();
 }
 
 
@@ -330,7 +375,7 @@ function keyPressed(e){
 					updateShape(translate_shape(1, activeShape));
 				}
 				break;
-		case "ArrowRight":
+			case "ArrowRight":
 				if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
 				break;
 		case "ArrowDown":
@@ -347,11 +392,21 @@ function keyPressed(e){
 	}
 }
 
+function restartGame(){
+	board = initBoard(board);
+	gameover = false;
+	lines = 0;
+	level = 0;
+	score = 0;
+	speed = 70;
+	add_shape();
+	
+
+}
+
 function startGame(){
 	window.cancelAnimationFrame(draw);
-	board = initBoard(board);
-	add_shape(board, Math.floor(Math.random() * 7));
-	gameover = false;
+	restartGame();
 	window.requestAnimationFrame(draw);
 }
 
