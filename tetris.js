@@ -1,3 +1,4 @@
+"use strict";
 const canvas = document.getElementById("playArea");
 const context = canvas.getContext("2d");
 const backgroundColor = "#cccccc"
@@ -12,10 +13,16 @@ const blockHeight = (height-(hpadding*2))/20;
 const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904"]
                             //I,      O,         T,        J,          L,       S,        Z
 
+let removeDup = (numbers) => numbers.filter((number, i) => numbers.indexOf(number) === i);
 let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
 let current_rotation = 0;
 let current_shape_color = 0;
+
+let next_shape = 0; //Edit the addShape function and the settle shape function to handle these as well
+let next_shape_color = 0;
+let speed = 60;
+let speedCounter = speed;
 
 const pieces = [
 	[
@@ -35,10 +42,10 @@ const pieces = [
 		[-1,1],[-1,0],[0,1],[1,1] //L piece
 	],
 	[
-		[0,0],[1,0],[-1,1],[0,1] //S piece
+		[0,1],[0,0],[1,0],[-1,1] //S piece
 	],
 	[
-		[0,0],[-1,0],[0,1],[1,1] //Z piece
+		[0,1],[-1,0],[0,0],[1,1] //Z piece
 	]
 
 ];
@@ -52,8 +59,8 @@ const pieces = [
 //01      O
 //23
 //
-// 0      T
-//123
+// 2      T
+//103
 //
 //1       L
 //023
@@ -61,11 +68,11 @@ const pieces = [
 //  1     J
 //230
 //
-// 01     S
-//23
+// 12     S
+//30
 //
-//10      Z
-// 23
+//12      Z
+// 03
 //
 context.strokeStyle = "#000000"; //Setting up the boundries visually
 context.strokeRect(0,0, width, height);
@@ -80,9 +87,9 @@ function drawBlock(x, y, color){
 
 function initBoard(board){ //setting up a blank board, ready to be filled up by tetrominos
     board = []
-    for(i = 0; i < board_width; i++){
+    for(let i = 0; i < board_width; i++){
         board.push([]);
-        for(j = 0; j < board_height; j++){
+        for(let j = 0; j < board_height; j++){
             board[i].push(backgroundColor);
         }
     }
@@ -91,8 +98,8 @@ function initBoard(board){ //setting up a blank board, ready to be filled up by 
 }
 
 function drawBoard(board){
-    for(i = 0; i < board.length; i++){
-        for(j = 0; j < board[i].length; j++){
+    for(let i = 0; i < board.length; i++){
+        for(let j = 0; j < board[i].length; j++){
             drawBlock((wpadding+(blockWidth*i)), (hpadding+(blockHeight*j)), board[i][j])
         }
     }
@@ -102,7 +109,7 @@ function add_shape(board, piece){
 	let Wmiddle = Math.floor(board.length/2);
 	let coords = []
 
-	for (i = 0; i < 4; i++){
+	for (let i = 0; i < 4; i++){
 		activeShape[i] = [0,0];
 		coords.push([Wmiddle + pieces[piece][i][0], pieces[piece][i][1]]);
 		current_rotation = 0;
@@ -118,7 +125,7 @@ function translate_shape(direction, coords){
 	let newCoords = [];
 	let relativeCoords = []
 
-	for (i = 0; i < coords.length; i++){
+	for (let i = 0; i < coords.length; i++){
 		if (direction == 3 || direction == 4){
 			relativeCoords = [activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]];
 		}
@@ -177,10 +184,10 @@ function doesItFit(movement, rotation, down){ //The parameters are questions tha
 	
 	//Then check all of the coordinates and see if they all don't colide with any of the background.
 	
-	for (i = 0; i < activeShape.length; i++){
+	for (let i = 0; i < activeShape.length; i++){
 		board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
 	}
-	for(i = 0; i < newCoords.length; i++){
+	for(let i = 0; i < newCoords.length; i++){
 		if (newCoords[i][0] < 0 || newCoords[i][0] > board_width-1 || board[newCoords[i][0]][newCoords[i][1]] != backgroundColor){
 			updateShape(activeShape)
 			return false
@@ -190,54 +197,78 @@ function doesItFit(movement, rotation, down){ //The parameters are questions tha
 	return true;
 }
 
-function rotate(anti){
-	//Only for testing purposes. Will delete later
-	let newCoords = [];
-	newCoords.push(activeShape[0]);
-
-	let relativeCoords = []
-
-	for (i = 1; i < 4; i++){
-		relativeCoords.push([activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]]);
-	}
-	console.log(relativeCoords);
-	for (i = 0; i < 3; i++){
-		if (anti){
-			//Rotate AntiClockwise
-			newCoords.push([relativeCoords[i][1] * -1 + newCoords[0][0], relativeCoords[i][0] + newCoords[0][1]]);
-		} else {
-			//Rotate Clockwise
-			newCoords.push([relativeCoords[i][1] + newCoords[0][0], relativeCoords[i][0] * -1 + newCoords[0][1]]);
-		}
-	}
-
-	updateShape(newCoords);
-}
-
-
 function updateShape(newCoords){ //Called whenever we make a change the the activeShape variable
-	for(i = 0; i < 4; i++){
+	for(let i = 0; i < 4; i++){
 		board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
 	}
 	
-	for (i = 0; i < 4; i++){
+	for (let i = 0; i < 4; i++){
 		board[newCoords[i][0]][newCoords[i][1]] = tetromino_colors[current_shape_color];
 	}
 	activeShape = newCoords;
 }
 
+
+function checkLine(y){
+	
+	for(let i = 0; i < board_width; i++){
+		if(board[i][y] == backgroundColor){return false;}
+	}
+	
+	return true;
+}
+
+
 function settleShape(){
 	//Called when the shape hits the bottom
-	//Check for any lines and clear them
+	
+	//Check for any lines
+		let fullLines = [];
+		for(let i = 0; i < activeShape.length; i++){
+			if(checkLine(activeShape[i][1])){
+				fullLines.push(activeShape[i][1])
+				for(let j = 0; j < board_width; j++){
+					board[j][activeShape[i][1]] = "#ffffff";
+				}
+				
+			}
+		}
+		
+		fullLines.sort();
+		fullLines = removeDup(fullLines);
+		console.log(fullLines);
+		
+		//Clear and move the blocks above it downward
+		for(let current_line = 0; current_line < fullLines.length; current_line++){
+			for(let i = 0; i < board_width; i++){ //This loop clears the line
+				board[i][fullLines[current_line]] = backgroundColor;
+			}
+			
+			let tempBoard = board;
+			for(let i = 0; i < fullLines[current_line]; i++){
+				for (let block = 0; block < board_width; block++){
+					board[block][i + 1] = tempBoard[block][i];
+				}
+			}
+			
+		}
+	
 	//update score if cleared
-	//
+	
 	//add a new shape
-	piece = Math.floor(Math.random() * 7);
+	//Check if you can put the piece in and if you can't
+	let piece = Math.floor(Math.random() * 7);
 	add_shape(board, piece);
+	
+	//end the Game
 
 }
 
 function draw(){
+	speedCounter--;
+	if (speedCounter <= 0){
+		if (doesItFit(0, 0, true)){updateShape(translate_shape(0, activeShape));speedCounter = speed;} else {settleShape();}
+	}
     drawBoard(board);
     window.requestAnimationFrame(draw);
 }
@@ -256,22 +287,21 @@ function keyPressed(e){
 	case "ArrowDown":
 			if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
 			break;
-	case "z":
-			if(doesItFit(0,1, false)){updateShape(translate_shape(3, activeShape));}
+	case ";":
+			if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
 			
 			break;
-	case "x":
-			if(doesItFit(0,-1, false)){updateShape(translate_shape(4, activeShape))}
+	case "q":
+			if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
 			break;
 	}
 }
 
 function startGame(){
+	window.cancelAnimationFrame(draw);
 	board = initBoard(board);
 	add_shape(board, Math.floor(Math.random() * 7));
+	window.requestAnimationFrame(draw);
 }
 
-window.requestAnimationFrame(draw);
 document.addEventListener("keydown", keyPressed, false);
-
-startGame()
