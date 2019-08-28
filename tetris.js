@@ -385,7 +385,7 @@ function keyPressed(e){
 				if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
 				
 				break;
-	ase "x":
+	case "x":
 				if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
 				break;
 		}
