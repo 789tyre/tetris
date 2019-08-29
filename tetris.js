@@ -428,11 +428,11 @@ function keyPressed(e){
 		case "ArrowUp":
 				if(canHold){holdShape();}
 				break;
-		case "z":
+		case ";":
 				if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
 				
 				break;
-	case "x":
+	case "q":
 				if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
 				break;
 		}
