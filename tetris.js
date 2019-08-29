@@ -15,13 +15,18 @@ const miniBlockSize = boxSize/5;
 const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0df704","#f71904"]
                             //I,      O,         T,        J,          L,       S,        Z
 
+
 let removeDup = (numbers) => numbers.filter((number, i) => numbers.indexOf(number) === i);
+let locker;
+//Board and shape variables
 let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
 let current_shape = 0;
 let fullLines = [];
 let next_shape = -1; //Edit the addShape function and the settle shape function to handle these as well
 let hold_shape = -1;
+
+//Game state trackers
 let canHold = true;
 let gameover = false;
 let lines = 0;
@@ -30,6 +35,10 @@ let level = 0;
 let speed = 70;
 let waitTimer = 0;
 let speedCounter = speed;
+
+//Controls
+let controls = [];
+
 
 const pieces = [
 	[
@@ -82,6 +91,21 @@ const pieces = [
 //
 context.strokeStyle = "#000000"; //Setting up the boundries visually
 context.strokeRect(0,0, width, height);
+
+function setControls(newControls){
+	for(let i = 0; i < newControls.length; i++){
+		document.getElementById(i.toString()).value = newControls[i];
+	}
+}
+
+function getControls(){
+	let controls = [];
+	for(let i = 0; i < 6; i++){
+		controls.push( document.getElementById( i.toString() ).value );
+	}
+	return controls
+}
+
 
 function drawBlock(x, y, color){
     //Has constant width and height and may not be the same
@@ -171,6 +195,8 @@ function add_shape(){
 		updateShape(coords);
 	} else {
 		alert("Game over");
+		locker.stop();
+		document.removeEventListener("keydown", keyPressed, false);
 		gameover = true;
 	}
 
@@ -413,30 +439,50 @@ function keyPressed(e){
 	
 	if (!gameover && !waitTimer){
 		switch(e.key){
-		case "ArrowLeft":
+		case (controls[1]): //Left
 				if(doesItFit(-1, 0, false)){
 					
 					updateShape(translate_shape(1, activeShape));
 				}
 				break;
-			case "ArrowRight":
+		case (controls[2]): //Right
 				if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
 				break;
-		case "ArrowDown":
+		case (controls[0]): //Down
 				if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
 				break;
-		case "ArrowUp":
+		case (controls[3]): //Hold
 				if(canHold){holdShape();}
 				break;
-		case ";":
+		case (controls[5]): //Rotate Anti Clockwise
 				if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
-				
 				break;
-	case "q":
+		case (controls[4]): //Rotate Clockwise
 				if(doesItFit(0,-1, false)){updateShape(translate_shape(3, activeShape))}
 				break;
 		}
 	}
+}
+
+function dontScroll(){
+	let lockX = window.scrollX;
+	let lockY = 0;
+	window.scrollTo(lockX, lockY);
+
+	function lockIt(){
+		window.scrollTo(lockX, lockY);
+		return false;
+	}
+	window.addEventListener("scroll", lockIt, false);
+
+	return {
+		stop: function(){
+			window.removeEventListener("scroll", lockIt, false);
+		}
+
+
+	}
+
 }
 
 function restartGame(){
@@ -448,14 +494,15 @@ function restartGame(){
 	speed = 70;
 	canHold = true;
 	add_shape();
-	
-
+	locker = dontScroll();
+	document.addEventListener("keydown", keyPressed, false);
 }
 
 function startGame(){
 	window.cancelAnimationFrame(draw);
+	controls = getControls();
 	restartGame();
 	window.requestAnimationFrame(draw);
 }
 
-document.addEventListener("keydown", keyPressed, false);
+//document.addEventListener("keydown", keyPressed, false);
