@@ -98,6 +98,10 @@ function setControls(newControls){
 	}
 }
 
+function setControlsSpecial(){
+	setControls(["o", "a", "e", ",", "'", "."]);
+}
+
 function getControls(){
 	let controls = [];
 	for(let i = 0; i < 6; i++){
@@ -197,6 +201,7 @@ function add_shape(){
 		alert("Game over");
 		locker.stop();
 		document.removeEventListener("keydown", keyPressed, false);
+		window.cancelAnimationFrame(draw);
 		gameover = true;
 	}
 
@@ -364,8 +369,12 @@ function settleShape(){
 		fullLines.sort();
 		fullLines = removeDup(fullLines);
 		//console.log(fullLines);
-		//if(fullLines.length > 0){waitTimer = 15;}
-		waitTimer = 15;
+		if(fullLines.length > 0){
+			waitTimer = 15;
+		} else {
+			add_shape();
+		}
+		//waitTimer = 15;
 		canHold = true;
 
 }
@@ -402,7 +411,7 @@ function clearLines(fullLines){
 		break;
 	}
 	lines += fullLines.length;
-	if (lines != 0 && lines % 10 == 0){
+	if (lines != 0 && lines >= level * 10){
 		speed -= 10;
 		level++;
 	}
@@ -427,6 +436,7 @@ function draw(){
 					speedCounter = speed;
 				} else {
 					settleShape();
+					speedCounter = speed;
 				}
 			}
 		}
@@ -449,7 +459,7 @@ function keyPressed(e){
 				if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
 				break;
 		case (controls[0]): //Down
-				if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
+				if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape(); speedCounter = speed;}
 				break;
 		case (controls[3]): //Hold
 				if(canHold){holdShape();}
@@ -491,7 +501,7 @@ function restartGame(){
 	lines = 0;
 	level = 0;
 	score = 0;
-	speed = 70;
+	speed = 60;
 	canHold = true;
 	add_shape();
 	locker = dontScroll();
@@ -505,4 +515,3 @@ function startGame(){
 	window.requestAnimationFrame(draw);
 }
 
-//document.addEventListener("keydown", keyPressed, false);
