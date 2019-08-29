@@ -18,12 +18,11 @@ const tetromino_colors = ["#04f7db","#ebf704","#f304f7","#0404f4", "#f77a04","#0
 let removeDup = (numbers) => numbers.filter((number, i) => numbers.indexOf(number) === i);
 let board = [];
 let activeShape = [[0,0],[0,0],[0,0],[0,0]];
-let current_rotation = 0;
-let current_shape_color = 0;
+let current_shape = 0;
 let fullLines = [];
 let next_shape = -1; //Edit the addShape function and the settle shape function to handle these as well
 let hold_shape = -1;
-let hold_shape_color = -1;
+let canHold = true;
 let gameover = false;
 let lines = 0;
 let score = 0;
@@ -134,9 +133,19 @@ function drawBoard(board){
 		//Maybe instead have a function that figures out where to put the mini shape and not this calculating garbage and offcenter stuff.
 
 	}
-
-	context.strokeRect(hpadding, hpadding * 2, boxSize, boxSize); //Hold Box
 	
+	context.fillStyle = backgroundColor;
+	context.strokeRect(hpadding, hpadding * 2, boxSize, boxSize); //Hold Box
+	context.fillRect(hpadding, hpadding * 2, boxSize, boxSize);
+	if (hold_shape != -1){
+		context.fillStyle = tetromino_colors[hold_shape];
+		for(let i = 0; i < activeShape.length; i++){
+			let centerW = boxSize/2 - miniBlockSize/2;
+			let centerH = (boxSize/2) - miniBlockSize * 1.5;
+			drawMiniBlock(hpadding + centerW + pieces[hold_shape][i][0] * miniBlockSize, hpadding * 2 + centerH + pieces[hold_shape][i][1] * miniBlockSize);
+		}
+	}
+
 	//Draw the level, current score and the line count
 	context.font = "30 px Arial";
 	context.fillStyle = "#000000";
@@ -147,29 +156,36 @@ function drawBoard(board){
 }
 
 function add_shape(){
-	let Wmiddle = Math.floor(board.length/2);
+	let Wmiddle = Math.floor(board_width/2);
 
 	if (next_shape == -1){
 		next_shape = Math.floor(Math.random() * 7);
 	}
 
-	let coords = []
 
-	for(let i = 0; i < activeShape.length; i++){
-		activeShape[i] = [0,0];
-		coords.push([Wmiddle + pieces[next_shape][i][0], pieces[next_shape][i][1]]);
-		current_rotation = 0;
-	}
-	current_shape_color = next_shape;
+	let coords = add_shape_specific(next_shape);
+	current_shape = next_shape;
 	next_shape = Math.floor(Math.random() * 7);
 
 	if (checkGameOver(coords)){
 		updateShape(coords);
 	} else {
+		alert("Game over");
 		gameover = true;
 	}
 
 }
+
+function add_shape_specific(piece){
+	let coords = []
+	let Wmiddle = Math.floor(board_width/2);
+	for(let i = 0; i < activeShape.length; i++){
+		activeShape[i] = [0,0];
+		coords.push([Wmiddle + pieces[piece][i][0], pieces[piece][i][1]]);
+	}
+	return coords
+}
+
 
 function checkGameOver(coords){
 	for (let i = 0; i < coords.length; i++){
@@ -177,6 +193,32 @@ function checkGameOver(coords){
 	}
 	return true;
 }
+
+function holdShape(){
+	canHold = false;
+	if (hold_shape != -1) {
+		//Swap the held shape and the current shape if it can fit
+		let toSwap = hold_shape;
+		hold_shape = current_shape;
+		current_shape = toSwap;
+		for(let i = 0; i < activeShape.length; i++){
+			board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
+		}
+		updateShape(add_shape_specific(current_shape));
+
+	} else {
+		//put the current shape into the hold box and get the next shape
+		for (let i = 0; i < activeShape.length; i++){
+			board[activeShape[i][0]][activeShape[i][1]] = backgroundColor;
+		}
+		hold_shape = current_shape;
+		current_shape = next_shape;
+		updateShape(add_shape_specific(next_shape));
+		next_shape = Math.floor(Math.random() * 7);
+	}
+}
+
+
 
 function translate_shape(direction, coords){
 	//This function gives the new coordinates given the old coordinates and the direction.
@@ -263,7 +305,7 @@ function updateShape(newCoords){ //Called whenever we make a change the the acti
 	}
 	
 	for (let i = 0; i < 4; i++){
-		board[newCoords[i][0]][newCoords[i][1]] = tetromino_colors[current_shape_color];
+		board[newCoords[i][0]][newCoords[i][1]] = tetromino_colors[current_shape];
 	}
 	activeShape = newCoords;
 }
@@ -296,7 +338,9 @@ function settleShape(){
 		fullLines.sort();
 		fullLines = removeDup(fullLines);
 		//console.log(fullLines);
+		//if(fullLines.length > 0){waitTimer = 15;}
 		waitTimer = 15;
+		canHold = true;
 
 }
 
@@ -367,7 +411,7 @@ function draw(){
 
 function keyPressed(e){
 	
-	if (!gameover){
+	if (!gameover && !waitTimer){
 		switch(e.key){
 		case "ArrowLeft":
 				if(doesItFit(-1, 0, false)){
@@ -380,6 +424,9 @@ function keyPressed(e){
 				break;
 		case "ArrowDown":
 				if(doesItFit(0,0, true)){updateShape(translate_shape(0, activeShape))}else{settleShape()}
+				break;
+		case "ArrowUp":
+				if(canHold){holdShape();}
 				break;
 		case "z":
 				if(doesItFit(0,1, false)){updateShape(translate_shape(4, activeShape));}
@@ -399,6 +446,7 @@ function restartGame(){
 	level = 0;
 	score = 0;
 	speed = 70;
+	canHold = true;
 	add_shape();
 	
 
