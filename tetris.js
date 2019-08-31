@@ -27,6 +27,7 @@ let next_shape = -1; //Edit the addShape function and the settle shape function 
 let hold_shape = -1;
 
 //Game state trackers
+let paused =  false;
 let canHold = true;
 let gameover = false;
 let lines = 0;
@@ -35,6 +36,7 @@ let level = 0;
 let speed = 70;
 let waitTimer = 0;
 let speedCounter = speed;
+let ID;
 
 //Controls
 let controls = [];
@@ -99,12 +101,12 @@ function setControls(newControls){
 }
 
 function setControlsSpecial(){
-	setControls(["o", "a", "e", ",", "'", "."]);
+	setControls(["o", "a", "e", ",", ".", "'", "p"]);
 }
 
 function getControls(){
 	let controls = [];
-	for(let i = 0; i < 6; i++){
+	for(let i = 0; i < 7; i++){
 		controls.push( document.getElementById( i.toString() ).value );
 	}
 	return controls
@@ -141,14 +143,17 @@ function initBoard(board){ //setting up a blank board, ready to be filled up by 
 function drawBoard(board){
 	context.fillStyle = backgroundColor;
 	context.strokeStyle = "#000000";
-	context.strokeRect(0,0,width, height);
 	context.fillRect(0,0, width, height);
+	context.strokeRect(0,0, width, height);
     for(let i = 0; i < board.length; i++){ //Draw the board
         for(let j = 0; j < board[i].length; j++){
             drawBlock((wpadding+(blockWidth*i)), (hpadding+(blockHeight*j)), board[i][j])
         }
     }
-	//Draw the next and hold box (placeholder)
+	//Draw the next and hold box
+	context.fontStyle = "30px Arial";
+	context.fillStyle = "#000000";
+	context.fillText("Next", wpadding + blockWidth * board_width + hpadding+13, hpadding * 1.5);
 	context.strokeStyle = "#000000";
 	context.fillStyle = backgroundColor;
 	context.strokeRect(wpadding + (blockWidth * board_width) + hpadding, hpadding * 2,  boxSize, boxSize); //Next box
@@ -162,6 +167,9 @@ function drawBoard(board){
 
 	}
 	
+	context.fontStyle = "30px Arial";
+	context.fillStyle = "#000000";
+	context.fillText("Hold", hpadding + 13, hpadding * 1.5);
 	context.fillStyle = backgroundColor;
 	context.strokeRect(hpadding, hpadding * 2, boxSize, boxSize); //Hold Box
 	context.fillRect(hpadding, hpadding * 2, boxSize, boxSize);
@@ -418,42 +426,58 @@ function clearLines(fullLines){
 	add_shape();
 }
 
+function pause(){
+	paused = !paused; //Toggle paused state
+
+	if (paused){
+		//Release the scroll bar
+		locker.stop();
+	} else {
+		//Get controls and validate them (should be in another function)
+		controls = getControls();
+		//lock the scroll bar again
+		locker = dontScroll();
+		//Restart the animation
+		window.requestAnimationFrame(draw);
+	}
+
+}
+
 
 function draw(){
-	
-	if (!gameover){
-		if (waitTimer){
-			waitTimer--;
-			if (!waitTimer){
-				clearLines(fullLines);
-			}
-		} else {
+	if(!paused){	
+		if (!gameover){
+			if (waitTimer){
+				waitTimer--;
+				if (!waitTimer){
+					clearLines(fullLines);
+				}
+			} else {
 		
-			speedCounter--;
-			if (speedCounter <= 0){
-				if (doesItFit(0, 0, true)){
-					updateShape(translate_shape(0, activeShape));
-					speedCounter = speed;
-				} else {
-					settleShape();
-					speedCounter = speed;
+				speedCounter--;
+				if (speedCounter <= 0){
+					if (doesItFit(0, 0, true)){
+						updateShape(translate_shape(0, activeShape));
+						speedCounter = speed;
+					} else {
+						settleShape();
+						speedCounter = speed;
+					}
 				}
 			}
 		}
+    	drawBoard(board);
+    	ID = window.requestAnimationFrame(draw);
+	} else {
+		window.cancelAnimationFrame(ID);
 	}
-    drawBoard(board);
-    window.requestAnimationFrame(draw);
 }
 
 function keyPressed(e){
-	
-	if (!gameover && !waitTimer){
+	if (!gameover && !waitTimer && !paused){
 		switch(e.key){
 		case (controls[1]): //Left
-				if(doesItFit(-1, 0, false)){
-					
-					updateShape(translate_shape(1, activeShape));
-				}
+				if(doesItFit(-1, 0, false)){updateShape(translate_shape(1, activeShape));}
 				break;
 		case (controls[2]): //Right
 				if(doesItFit(1, 0, false)){updateShape(translate_shape(2, activeShape));}
@@ -472,6 +496,9 @@ function keyPressed(e){
 				break;
 		}
 	}
+	if (e.key == controls[6]){
+		pause();
+	}
 }
 
 function dontScroll(){
@@ -489,19 +516,20 @@ function dontScroll(){
 		stop: function(){
 			window.removeEventListener("scroll", lockIt, false);
 		}
-
-
 	}
-
 }
 
 function restartGame(){
+	paused = true;
+	draw();
+	paused = false;
 	board = initBoard(board);
 	gameover = false;
 	lines = 0;
 	level = 0;
 	score = 0;
 	speed = 60;
+	hold_shape = -1;
 	canHold = true;
 	add_shape();
 	locker = dontScroll();
@@ -509,9 +537,9 @@ function restartGame(){
 }
 
 function startGame(){
-	window.cancelAnimationFrame(draw);
+	
 	controls = getControls();
 	restartGame();
-	window.requestAnimationFrame(draw);
+	ID = window.requestAnimationFrame(draw);
 }
 
