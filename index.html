@@ -19,10 +19,12 @@
 	  Rotate Anti Clockwise: <input type = "text" id = "5" value = "z"><br>
 	  Pause: <input type = "text" id = "6" value = "p"><br>
 	  <button onclick = "startGame()">Start New Game</button><br>
-	  <button onclick = 'setControls(["ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp", "x", "z", "p"])'>QWERTY - Two Handed</button>
+	  <button onclick = 'setControls(["ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp", "x", "z", "c"])'>QWERTY - Two Handed</button>
+	  <button onclick = 'setControls(["s","a","d","w","k","j","l"])'>QWERTY - Two Handed Swapped</button>
 	  <button onclick = 'setControls(["s", "a", "d", "w", "e", "q", "r"])'>QWERTY - One Handed</button><br>
-	  <button onclick = 'setControls(["ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp", "q", ";", "l"])'>Dvorak - Two Handed</button>
-	  <button onclick = 'setControlsSpecial()'>Dvorak - One Handed</button>
+	  <button onclick = 'setControls(["ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp", "q", ";", "j"])'>Dvorak - Two Handed</button>
+	  <button onclick = 'setControlsSpecial(2)'>Dvorak - Two Handed Swapped</button>
+	  <button onclick = 'setControlsSpecial(1)'>Dvorak - One Handed</button>
 
 	</div>
     <script src="tetris.js"></script>

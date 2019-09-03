@@ -100,8 +100,13 @@ function setControls(newControls){
 	}
 }
 
-function setControlsSpecial(){
-	setControls(["o", "a", "e", ",", ".", "'", "p"]);
+function setControlsSpecial(mode){
+	switch (mode){
+	case 1:
+		setControls(["o", "a", "e", ",", ".", "'", "p"]);
+	case 2:
+		setControls(["o", "a", "e", ",", "t", "h", "n"]);
+	}
 }
 
 function getControls(){
