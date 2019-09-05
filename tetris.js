@@ -156,7 +156,7 @@ function drawBoard(board){
         }
     }
 	//Draw the next and hold box
-	context.fontStyle = "30px Arial";
+	context.font = "20px Arial";
 	context.fillStyle = "#000000";
 	context.fillText("Next", wpadding + blockWidth * board_width + hpadding+13, hpadding * 1.5);
 	context.strokeStyle = "#000000";
@@ -172,7 +172,6 @@ function drawBoard(board){
 
 	}
 	
-	context.fontStyle = "30px Arial";
 	context.fillStyle = "#000000";
 	context.fillText("Hold", hpadding + 13, hpadding * 1.5);
 	context.fillStyle = backgroundColor;
@@ -188,7 +187,6 @@ function drawBoard(board){
 	}
 
 	//Draw the level, current score and the line count
-	context.font = "30 px Arial";
 	context.fillStyle = "#000000";
 	context.fillText("Level: " + level, hpadding, boxSize + hpadding * 3);
 	context.fillText("Lines: " + lines, hpadding, boxSize + hpadding * 4);
@@ -269,7 +267,7 @@ function translate_shape(direction, coords){
 	//0 = down, 1 = left, 2 = right, 3 = anti clockwise, 4 = clockwise
 	let newCoords = [];
 	let relativeCoords = []
-
+	if(current_shape == 1 && (direction == 3 || direction == 4)){return coords;}
 	for (let i = 0; i < coords.length; i++){
 		if (direction == 3 || direction == 4){
 			relativeCoords = [activeShape[i][0] - activeShape[0][0], activeShape[i][1] - activeShape[0][1]];
@@ -437,6 +435,13 @@ function pause(){
 	if (paused){
 		//Release the scroll bar
 		locker.stop();
+		//Draw a big rectangle that prevents cheating
+		context.fillStyle = backgroundColor;
+		context.fillRect(0,0,width, height);
+		context.font = "50px Arial";
+		context.fillStyle = "#000000";
+		context.fillText("PAUSED",width/2-100,height/2);
+		context.strokeRect(0,0,width, height);
 	} else {
 		//Get controls and validate them (should be in another function)
 		controls = getControls();
