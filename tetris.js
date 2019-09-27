@@ -156,7 +156,7 @@ function drawBoard(board){
         }
     }
 	//Draw the next and hold box
-	context.font = "20px Arial";
+	context.font = "10px Arial";
 	context.fillStyle = "#000000";
 	context.fillText("Next", wpadding + blockWidth * board_width + hpadding+13, hpadding * 1.5);
 	context.strokeStyle = "#000000";
@@ -190,6 +190,7 @@ function drawBoard(board){
 	context.fillStyle = "#000000";
 	context.fillText("Level: " + level, hpadding, boxSize + hpadding * 3);
 	context.fillText("Lines: " + lines, hpadding, boxSize + hpadding * 4);
+	context.font = "10px Arial";
 	context.fillText("Score: " + score, hpadding, boxSize + hpadding * 5);
 	
 }
